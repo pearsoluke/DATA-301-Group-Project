@@ -7,11 +7,16 @@ ui <- fluidPage(
     actionButton("Go", "Go")
   ),
   mainPanel(
-    plotOutput("confirmed"),
-    plotOutput("deaths"),
-    plotOutput("recovered"),
-  )
-)
+    tabsetPanel(
+      tabPanel("Total",
+        plotOutput("TotalConfirmed"),
+        plotOutput("TotalDeaths")
+      ),
+      tabPanel("Daily",
+        plotOutput("DailyConfirmed"),
+        plotOutput("DailyDeaths")
+      )
+  )))
 
 
 server <- function(input, output){
@@ -29,28 +34,35 @@ server <- function(input, output){
     COVIDCountry <- unique(COVIDCountry)
     COVIDCountry <- addNewColumn(COVIDCountry)
     
-    confirmedTitle <- paste("Daily confirmed cases in", input$Country)
-    confirmedY <- "Cases"
-    deathsTitle <- paste("Daily deaths in", input$Country)
-    deathsY <- "Deaths"
-    recoveredTitle <- paste("Daily recovered in", input$Country)
-    recoveredY <- "Recovered"
+    TotalConfirmedTitle <- paste("Daily confirmed cases in", input$Country)
+    TotalConfirmedY <- "Total Cases"
+    
+    TotalDeathsTitle <- paste("Daily deaths in", input$Country)
+    TotalDeathsY <- "Total Deaths"
+    
+    DailyConfirmedTitle <- paste("Daily confirmed cases in", input$Country)
+    DailyConfirmedY <- "Daily Cases"
+    
+    DailyDeathsTitle <- paste("Daily deaths in", input$Country)
+    DailyDeathsY <- "Daily Deaths"
     
     xText <- "Date"
     
-    
-    output$confirmed <- renderPlot({
-      plot(COVIDCountry$Date, COVIDCountry$NewConfirmed, type = 'l', main = confirmedTitle, xlab = xText, ylab = confirmedY)
+    output$TotalConfirmed <- renderPlot({
+      plot(COVIDCountry$Date, COVIDCountry$Confirmed, type = 'l', main = TotalConfirmedTitle, xlab = xText, ylab = TotalConfirmedY)
     })
     
-    output$deaths <- renderPlot({
-      plot(COVIDCountry$Date, COVIDCountry$NewDeaths, type = 'l', main = deathsTitle, xlab = xText, ylab = deathsY)
+    output$TotalDeaths <- renderPlot({
+      plot(COVIDCountry$Date, COVIDCountry$Deaths, type = 'l', main = TotalDeathsTitle, xlab = xText, ylab = TotalDeathsY)
     })
     
-    #output$recovered <- renderPlot({
-    #  plot(COVIDCountry$Date, COVIDCountry$NewRecovered, type = 'l', main = recoveredTitle, xlab = xText, ylab = recoveredY)
-    #})
+    output$DailyConfirmed <- renderPlot({
+      plot(COVIDCountry$Date, COVIDCountry$NewConfirmed, type = 'l', main = DailyConfirmedTitle, xlab = xText, ylab = DailyConfirmedY)
+    })
     
+    output$DailyDeaths <- renderPlot({
+      plot(COVIDCountry$Date, COVIDCountry$NewDeaths, type = 'l', main = DailyDeathsTitle, xlab = xText, ylab = DailyDeathsY)
+    })
   })
 }
 
