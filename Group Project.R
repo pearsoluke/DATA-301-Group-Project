@@ -4,10 +4,6 @@ library(tsibble)
 library(lubridate)
 library(ggplot2)
 
-COVIDRaw <- read.csv("countries-aggregated.csv")
-
-COVID <- COVIDRaw %>% group_by(Country) %>% mutate(Date = as.Date(Date))
-
 ## Add new cases/deaths/recovered
 
 addNewColumn <- function(df){
@@ -20,8 +16,8 @@ addNewColumn <- function(df){
   for(i in 1:x){
     if(i == 1){
       NewConfirmed[i] = 0
-      NewDeaths[i] = df$Deaths[i]
-      NewRecoveries[i] = df$Confirmed[i]
+      NewDeaths[i] = 0
+      NewRecoveries[i] = 0
     }
     if(i > 1){
       NewConfirmed[i] = df$Confirmed[i] - df$Confirmed[(i - 1)]
@@ -32,3 +28,4 @@ addNewColumn <- function(df){
   df <- df %>% mutate(NewConfirmed = NewConfirmed, NewDeaths = NewDeaths, NewRecovered = NewRecoveries)
   return(df)
 }
+
