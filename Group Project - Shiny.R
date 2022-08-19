@@ -59,10 +59,24 @@ server <- function(input, output, session){
   updateDateRangeInput(session, "dateRange", min = min(COVID$Date), max = max(COVID$Date), start = min(COVID$Date), end = max(COVID$Date))
   
   observeEvent(input$Go,{
+    # Importing data
     COVIDCountry <- COVID %>% filter(Country == input$Country)
     COVIDCountry <- unique(COVIDCountry)
     COVIDCountry <- addNewColumn(COVIDCountry)
+    
+    # Aggregating by month
+    DateMonth <- floor_date(as.POSIXct(COVIDCountry$Date), unit = 'month')
+    COVIDCountry$Month <- DateMonth
+    
+    COVIDCountryMonth <- COVIDCountry %>%                        
+      group_by(Month) %>% 
+      summarize(NewConfirmed = sum(NewConfirmed), NewRecovered = sum(NewRecovered), NewDeaths = sum(NewDeaths), Confirmed = max(Confirmed), Deaths = max(Deaths), Recovered = max(Recovered)) %>% 
+      as.data.frame()
+    
+    # Filtering by dates selected
     COVIDCountry <- COVIDCountry %>% filter(Date %in% input$dateRange[1]:input$dateRange[2])
+    
+
     
     # Set scale for x-axis
     dateIntervals <- data.frame(xDates = seq(as.Date(min(COVIDCountry$Date)), as.Date(max(COVIDCountry$Date)), by = input$dateInterval))
@@ -82,22 +96,37 @@ server <- function(input, output, session){
     yRangeDC <- pretty(COVIDCountry$NewConfirmed)
     yRangeDD <- pretty(COVIDCountry$NewDeaths)
     
+    yRangeMonthTC <- pretty(COVIDCountryMonth$Confirmed)
+    yRangeMonthTD <- pretty(COVIDCountryMonth$Deaths)
+    yRangeMonthDC <- pretty(COVIDCountryMonth$NewConfirmed)
+    yRangeMonthDD <- pretty(COVIDCountryMonth$NewDeaths)
+    
     yLabelTC <- format(yRangeTC, big.mark = ",", scientific = FALSE)
     yLabelTD <- format(yRangeTD, big.mark = ",", scientific = FALSE)
     yLabelDC <- format(yRangeDC, big.mark = ",", scientific = FALSE)
     yLabelDD <- format(yRangeDD, big.mark = ",", scientific = FALSE)
     
+    yLabelMonthTC <- format(yRangeMonthTC, big.mark = ",", scientific = FALSE)
+    yLabelMonthTD <- format(yRangeMonthTD, big.mark = ",", scientific = FALSE)
+    yLabelMonthDC <- format(yRangeMonthDC, big.mark = ",", scientific = FALSE)
+    yLabelMonthDD <- format(yRangeMonthDD, big.mark = ",", scientific = FALSE)
+    
+    
     # Set labels
     TotalConfirmedTitle <- paste("Total confirmed cases in", input$Country)
+    TotalConfirmedSeasonal <- paste("Seasonal plot of total confirmed cases in", input$Country)
     TotalConfirmedY <- "Total Cases"
     
     TotalDeathsTitle <- paste("Total deaths in", input$Country)
+    TotalDeathsSeasonal <- paste("Seasonal plot of total deaths in", input$Country)
     TotalDeathsY <- "Total Deaths"
     
     DailyConfirmedTitle <- paste("Daily confirmed cases in", input$Country)
+    DailyConfirmedSeasonal <- paste("Seasonal plot of daily confirmed cases in", input$Country)
     DailyConfirmedY <- "Daily Cases"
     
     DailyDeathsTitle <- paste("Daily deaths in", input$Country)
+    DailyDeathsSeasonal <- paste("Seasonal plot of daily in", input$Country)
     DailyDeathsY <- "Daily Deaths"
     
     xText <- paste("Date by", input$dateInterval)
@@ -117,18 +146,16 @@ server <- function(input, output, session){
       yDD7 <- COVIDCountry$NewDeaths7
     }
     # Time Series objects
-    tsTC <- ts(COVIDCountry$Confirmed, start = c(2020, 1), frequency = 365)
-    tsTD <- ts(COVIDCountry$Deaths, start = c(2020, 1), frequency = 365)
-    tsDC <- ts(COVIDCountry$NewConfirmed, start = c(2020, 1), frequency = 365)
-    tsDD <- ts(COVIDCountry$NewDeaths, start = c(2020, 1), frequency = 365)
+    tsTC <- ts(COVIDCountryMonth$Confirmed, start = c(2020, 1), frequency = 12)
+    tsTD <- ts(COVIDCountryMonth$Deaths, start = c(2020, 1), frequency = 12)
+    tsDC <- ts(COVIDCountryMonth$NewConfirmed, start = c(2020, 1), frequency = 12)
+    tsDD <- ts(COVIDCountryMonth$NewDeaths, start = c(2020, 1), frequency = 12)
     
     # Plotting
     #Total Confirmed Cases
     output$TCLine <- renderPlot({
         # Main Plot
         plot(x = COVIDCountry$Date, COVIDCountry$Confirmed, type = 'l', xlab = "", ylab = "", axes = FALSE, col = alpha('black', 0.6))
-        # 7 Day average
-        lines(x7, yTC7, type = 'l', col = 4, lwd = 2)
         # Axis scales
         axis.Date(side = 1, at = dateIntervals$xDates, labels = dateIntervals$xLabels, las = 2)
         axis(side = 2, at = yRangeTC, labels = yLabelTC, las = 3)
@@ -138,26 +165,26 @@ server <- function(input, output, session){
         mtext(text = TotalConfirmedY, side = 2, line = 2)
         # Grid
         grid(nx = length(dateIntervals[,1]), ny = length(yRangeTC), lty = 2, col = "gray", lwd = 1)
-        # Legend
         if(input$Seven){
-        legend('topleft', '7 Day average', lty = 1, col = 4, lwd = 2)
+          # 7 Day average
+          lines(x7, yTC7, type = 'l', col = 4, lwd = 2)
+          # Legend
+          legend('topleft', '7 Day average', lty = 1, col = 4, lwd = 2)
         }
     })
     
     output$TCSeasonal <- renderPlot({
-      ggseasonplot(tsTC)
+      ggseasonplot(tsTC, polar = FALSE) + scale_y_continuous(breaks = yRangeMonthTC, labels = yLabelMonthTC) + labs(title = TotalConfirmedSeasonal, x = "Month", col = "Year") + geom_line(size=2)
     })
     
     output$TCSpider <- renderPlot({
-      ggseasonplot(tsTC, polar = TRUE)
+      ggseasonplot(tsTC, polar = TRUE) + labs(title = TotalConfirmedSeasonal, x = "Month", col = "Year") + geom_line(size=2) + theme(axis.text.y=element_blank(), axis.ticks.y=element_blank())
     })
     
     # Total Deaths    
     output$TDLine <- renderPlot({
         # Main Plot
         plot(x = COVIDCountry$Date, COVIDCountry$Deaths, type = 'l', xlab = "", ylab = "", axes = FALSE, col = alpha('black', 0.6))
-        # 7 Day average
-        lines(x7, yTD7, type = 'l', col = 4, lwd = 2)
         # Axis scales
         axis.Date(side = 1, at = dateIntervals$xDates, labels = dateIntervals$xLabels, las = 2)
         axis(side = 2, at = yRangeTD, labels = yLabelTD, las = 3)
@@ -167,27 +194,27 @@ server <- function(input, output, session){
         mtext(text = TotalDeathsY, side = 2, line = 2)
         # Grid
         grid(nx = length(dateIntervals[,1]), ny = length(yRangeTD), lty = 2, col = "gray", lwd = 1)
-        # Legend
         if(input$Seven){
+          # 7 Day average
+          lines(x7, yTD7, type = 'l', col = 4, lwd = 2)
+          # Legend
           legend('topleft', '7 Day average', lty = 1, col = 4, lwd = 2)
         }
         
     })
     
     output$TDSeasonal <- renderPlot({
-      ggseasonplot(tsTD)
+      ggseasonplot(tsTD, polar = FALSE) + labs(title = TotalDeathsSeasonal, x = "Month", col = "Year") + scale_y_continuous(breaks = yRangeMonthTD, labels = yLabelMonthTD) + geom_line(size=2)
     })
     
     output$TDSpider <- renderPlot({
-      ggseasonplot(tsTD, polar = TRUE)
+      ggseasonplot(tsTD, polar = TRUE) + labs(title = TotalDeathsSeasonal, x = "Month", col = "Year") + geom_line(size=2) + theme(axis.text.y=element_blank(), axis.ticks.y=element_blank())
     })
     
     # Daily Confirmed Cases    
     output$DCLine <- renderPlot({
         # Main Plot
         plot(x = COVIDCountry$Date, COVIDCountry$NewConfirmed, type = 'l', xlab = "", ylab = "", axes = FALSE, col = alpha('black', 0.6))
-        # 7 day average
-        lines(x7, yDC7, type = 'l', col = 4, lwd = 2)
         # Axis scales
         axis.Date(side = 1, at = dateIntervals$xDates, labels = dateIntervals$xLabels, las = 2)
         axis(side = 2, at = yRangeDC, labels = yLabelDC, las = 3)
@@ -197,26 +224,28 @@ server <- function(input, output, session){
         mtext(text = DailyConfirmedY, side = 2, line = 2)
         # Grid
         grid(nx = length(dateIntervals[,1]), ny = length(yRangeDC), lty = 2, col = "gray", lwd = 1)
-        # Legend
         if(input$Seven){
+          # 7 day average
+          lines(x7, yDC7, type = 'l', col = 4, lwd = 2)
+          # Legend
           legend('topleft', '7 Day average', lty = 1, col = 4, lwd = 2)
         }
     })
     
     output$DCSeasonal <- renderPlot({
-      ggseasonplot(tsDC)
+      ggseasonplot(tsDC, polar = FALSE) + labs(title = DailyConfirmedSeasonal, x = "Month", col = "Year") + scale_y_continuous(breaks = yRangeMonthDC, labels = yLabelMonthDC) + geom_line(size=2)
+      
     })
     
     output$DCSpider <- renderPlot({
-      ggseasonplot(tsDC, polar = TRUE)
+      ggseasonplot(tsDC, polar = TRUE) + labs(title = DailyConfirmedSeasonal, x = "Month", col = "Year") + geom_line(size=2) + theme(axis.text.y=element_blank(), axis.ticks.y=element_blank())
+      
     })
     
     # Daily Deaths   
     output$DDLine <- renderPlot({
         # Main plot
         plot(x = COVIDCountry$Date, COVIDCountry$NewDeaths, type = 'l', xlab = "", ylab = "", axes = FALSE, col = alpha('black', 0.6))
-        # 7 Day average
-        lines(x7, yDD7, type = 'l', col = 4, lwd = 2)
         # Axis scales
         axis.Date(side = 1, at = dateIntervals$xDates, labels = dateIntervals$xLabels, las = 1)
         axis(side = 2, at = yRangeDD, labels = yLabelDD, las = 3)
@@ -226,20 +255,26 @@ server <- function(input, output, session){
         mtext(text = DailyDeathsY, side = 2, line = 2)
         # Grid
         grid(nx = length(dateIntervals[,1]), ny = length(yRangeDD), lty = 2, col = "gray", lwd = 1)
-        # Legend
         if(input$Seven){
+          # 7 Day average
+          lines(x7, yDD7, type = 'l', col = 4, lwd = 2)
+          # Legend
           legend('topleft', '7 Day average', lty = 1, col = 4, lwd = 2)
         }
     })
     
     output$DDSeasonal <- renderPlot({
-      ggseasonplot(tsDD)
+      ggseasonplot(tsDD, polar = FALSE) + labs(title = DailyDeathsSeasonal, x = "Month", col = "Year") + scale_y_continuous(breaks = yRangeMonthDD, labels = yLabelMonthDD) + geom_line(size=2)
+      
     })
     
     output$DDSpider <- renderPlot({
-      ggseasonplot(tsDD, polar = TRUE)
+      ggseasonplot(tsDD, polar = TRUE) + labs(title = DailyDeathsSeasonal, x = "Month", col = "Year") + geom_line(size=2) + theme(axis.text.y=element_blank(), axis.ticks.y=element_blank())
+      
     })
-  })
-}
-
+  })}  
+    
 shinyApp(ui =  ui, server = server)
+
+
+

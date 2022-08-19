@@ -7,8 +7,6 @@ library(tsibble)
 library(ggfortify)
 library(forecast)
 
-install.packages("forecast")
-
 addNewColumn <- function(df){
   NewConfirmed <- 0
   NewDeaths <- 0
@@ -64,6 +62,33 @@ addNewColumn <- function(df){
 return(df)
 }
 
-  
-  
-  
+COVIDRaw <- read.csv("countries-aggregated.csv")
+COVID <- COVIDRaw %>% group_by(Country) %>% mutate(Date = as.Date(Date))
+
+COVIDCountry <- COVID %>% filter(Country == 'Afghanistan')
+COVIDCountry <- unique(COVIDCountry)
+COVIDCountry <- addNewColumn(COVIDCountry)
+
+DateMonth <- floor_date(as.POSIXct(COVIDCountry$Date), unit = 'month')
+COVIDCountry$Month <- DateMonth
+
+DateYear <- floor_date(as.POSIXct(COVIDCountry$Date), unit = 'year')
+COVIDCountry$Year <- DateYear
+
+COVIDCountryMonth <- COVIDCountry %>%                        
+  group_by(Month) %>% 
+  dplyr::summarize(NewConfirmed = sum(NewConfirmed), NewRecovered = sum(NewRecovered), NewDeaths = sum(NewDeaths), Confirmed = max(Confirmed), Deaths = max(Deaths), Recovered = max(Recovered)) %>% 
+  as.data.frame()
+
+
+
+
+
+
+
+
+
+
+
+
+
