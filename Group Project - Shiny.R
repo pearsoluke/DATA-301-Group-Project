@@ -23,6 +23,7 @@ ui <- fluidPage(
                plotOutput("TCLine"),
                plotOutput("TCSeasonal"),
                plotOutput("TCSpider"),
+               plotOutput("TCAutocorrelation"),
                plotOutput("TCTrendDecomp"),
                plotOutput("TCSeasonalDecomp"),
                plotOutput("TCRandomDecomp")
@@ -31,6 +32,7 @@ ui <- fluidPage(
                plotOutput("DCLine"),
                plotOutput("DCSeasonal"),
                plotOutput("DCSpider"),
+               plotOutput("DCAutocorrelation"),
                plotOutput("DCTrendDecomp"),
                plotOutput("DCSeasonalDecomp"),
                plotOutput("DCRandomDecomp")
@@ -39,6 +41,7 @@ ui <- fluidPage(
                plotOutput("TDLine"),
                plotOutput("TDSeasonal"),
                plotOutput("TDSpider"),
+               plotOutput("TDAutocorrelation"),
                plotOutput("TDTrendDecomp"),
                plotOutput("TDSeasonalDecomp"),
                plotOutput("TDRandomDecomp")
@@ -47,6 +50,7 @@ ui <- fluidPage(
                plotOutput("DDLine"),
                plotOutput("DDSeasonal"),
                plotOutput("DDSpider"),
+               plotOutput("DDAutocorrelation"),
                plotOutput("DDTrendDecomp"),
                plotOutput("DDSeasonalDecomp"),
                plotOutput("DDRandomDecomp")
@@ -135,19 +139,23 @@ server <- function(input, output, session){
     
     # Set labels
     TotalConfirmedTitle <- paste("Total confirmed cases in", input$Country)
-    TotalConfirmedSeasonal <- paste("Seasonal plot of total confirmed cases in", input$Country)
+    TotalConfirmedSeasonal <- paste("Seasonal plot of", TotalConfirmedTitle)
+    TotalConfirmedACF <- paste("Autocorrelation of", TotalConfirmedTitle)
     TotalConfirmedY <- "Total Cases"
     
     TotalDeathsTitle <- paste("Total deaths in", input$Country)
-    TotalDeathsSeasonal <- paste("Seasonal plot of total deaths in", input$Country)
+    TotalDeathsSeasonal <- paste("Seasonal plot of", TotalDeathsTitle)
+    TotalDeathsACF <- paste("Autocorrelation of", TotalDeathsTitle)
     TotalDeathsY <- "Total Deaths"
     
     DailyConfirmedTitle <- paste("Daily confirmed cases in", input$Country)
-    DailyConfirmedSeasonal <- paste("Seasonal plot of daily confirmed cases in", input$Country)
+    DailyConfirmedSeasonal <- paste("Seasonal plot of", DailyConfirmedTitle)
+    DailyConfirmedACF <- paste("Autocorrelation of", DailyConfirmedTitle)
     DailyConfirmedY <- "Daily Cases"
     
     DailyDeathsTitle <- paste("Daily deaths in", input$Country)
-    DailyDeathsSeasonal <- paste("Seasonal plot of daily in", input$Country)
+    DailyDeathsSeasonal <- paste("Seasonal plot of", DailyDeathsTitle)
+    DailyDeathsACF <- paste("Autocorrelation of", DailyDeathsTitle)
     DailyDeathsY <- "Daily Deaths"
     
     xText <- paste("Date by", input$dateInterval)
@@ -209,6 +217,10 @@ server <- function(input, output, session){
       ggseasonplot(tsTCMonth, polar = TRUE) + labs(title = TotalConfirmedSeasonal, x = "Month", col = "Year") + geom_line(size=2) + theme(axis.text.y=element_blank(), axis.ticks.y=element_blank())
     })
     
+    output$TCAutocorrelation <- renderPlot({
+      ggAcf(tsTC) + labs(title = TotalConfirmedACF)
+    })
+    
     # Total Deaths    
     output$TDLine <- renderPlot({
         # Main Plot
@@ -248,6 +260,10 @@ server <- function(input, output, session){
     
     output$TDSpider <- renderPlot({
       ggseasonplot(tsTDMonth, polar = TRUE) + labs(title = TotalDeathsSeasonal, x = "Month", col = "Year") + geom_line(size=2) + theme(axis.text.y=element_blank(), axis.ticks.y=element_blank())
+    })
+    
+    output$TDAutocorrelation <- renderPlot({
+      ggAcf(tsTD) + labs(title = TotalDeathsACF)
     })
     
     # Daily Confirmed Cases    
@@ -293,6 +309,10 @@ server <- function(input, output, session){
       
     })
     
+    output$DCAutocorrelation <- renderPlot({
+      ggAcf(tsDC) + labs(title = DailyConfirmedACF)
+    })
+    
     # Daily Deaths   
     output$DDLine <- renderPlot({
         # Main plot
@@ -335,6 +355,11 @@ server <- function(input, output, session){
       ggseasonplot(tsDDMonth, polar = TRUE) + labs(title = DailyDeathsSeasonal, x = "Month", col = "Year") + geom_line(size=2) + theme(axis.text.y=element_blank(), axis.ticks.y=element_blank())
       
     })
+    
+    output$DDAutocorrelation <- renderPlot({
+      ggAcf(tsDD) + labs(title = DailyDeathsACF)
+    })
+    
   })}  
     
 shinyApp(ui =  ui, server = server)
