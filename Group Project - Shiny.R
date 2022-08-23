@@ -22,22 +22,34 @@ ui <- fluidPage(
       tabPanel("Total Confirmed",
                plotOutput("TCLine"),
                plotOutput("TCSeasonal"),
-               plotOutput("TCSpider")
+               plotOutput("TCSpider"),
+               plotOutput("TCTrendDecomp"),
+               plotOutput("TCSeasonalDecomp"),
+               plotOutput("TCRandomDecomp")
       ),
       tabPanel("Daily Confirmed",
                plotOutput("DCLine"),
                plotOutput("DCSeasonal"),
-               plotOutput("DCSpider")
+               plotOutput("DCSpider"),
+               plotOutput("DCTrendDecomp"),
+               plotOutput("DCSeasonalDecomp"),
+               plotOutput("DCRandomDecomp")
       ),
       tabPanel("Total Deaths",
                plotOutput("TDLine"),
                plotOutput("TDSeasonal"),
-               plotOutput("TDSpider")
+               plotOutput("TDSpider"),
+               plotOutput("TDTrendDecomp"),
+               plotOutput("TDSeasonalDecomp"),
+               plotOutput("TDRandomDecomp")
       ),
       tabPanel("Daily Deaths",
                plotOutput("DDLine"),
                plotOutput("DDSeasonal"),
-               plotOutput("DDSpider")
+               plotOutput("DDSpider"),
+               plotOutput("DDTrendDecomp"),
+               plotOutput("DDSeasonalDecomp"),
+               plotOutput("DDRandomDecomp")
       )
     ))
 )
@@ -73,10 +85,19 @@ server <- function(input, output, session){
       summarize(NewConfirmed = sum(NewConfirmed), NewRecovered = sum(NewRecovered), NewDeaths = sum(NewDeaths), Confirmed = max(Confirmed), Deaths = max(Deaths), Recovered = max(Recovered)) %>% 
       as.data.frame()
     
+    # Time Series objects
+    tsTC <- ts(COVIDCountry$Confirmed, start = c(2020, 1), frequency = 365)
+    tsTD <- ts(COVIDCountry$Deaths, start = c(2020, 1), frequency = 365)
+    tsDC <- ts(COVIDCountry$NewConfirmed, start = c(2020, 1), frequency = 365)
+    tsDD <- ts(COVIDCountry$NewDeaths, start = c(2020, 1), frequency = 365)
+    
+    tsTCMonth <- ts(COVIDCountryMonth$Confirmed, start = c(2020, 1), frequency = 12)
+    tsTDMonth <- ts(COVIDCountryMonth$Deaths, start = c(2020, 1), frequency = 12)
+    tsDCMonth <- ts(COVIDCountryMonth$NewConfirmed, start = c(2020, 1), frequency = 12)
+    tsDDMonth <- ts(COVIDCountryMonth$NewDeaths, start = c(2020, 1), frequency = 12)
+    
     # Filtering by dates selected
     COVIDCountry <- COVIDCountry %>% filter(Date %in% input$dateRange[1]:input$dateRange[2])
-    
-
     
     # Set scale for x-axis
     dateIntervals <- data.frame(xDates = seq(as.Date(min(COVIDCountry$Date)), as.Date(max(COVIDCountry$Date)), by = input$dateInterval))
@@ -132,24 +153,19 @@ server <- function(input, output, session){
     xText <- paste("Date by", input$dateInterval)
     
     # 7 Day average
-    x7 <- c()
-    yTC7 <- c()
-    yTD7 <- c()
-    yDC7 <- c()
-    yDD7 <- c()
     
-    if(input$Seven){
-      x7 <- COVIDCountry$Date
-      yTC7 <- COVIDCountry$Confirmed7
-      yTD7 <- COVIDCountry$Deaths7
-      yDC7 <- COVIDCountry$NewConfirmed7
-      yDD7 <- COVIDCountry$NewDeaths7
-    }
-    # Time Series objects
-    tsTC <- ts(COVIDCountryMonth$Confirmed, start = c(2020, 1), frequency = 12)
-    tsTD <- ts(COVIDCountryMonth$Deaths, start = c(2020, 1), frequency = 12)
-    tsDC <- ts(COVIDCountryMonth$NewConfirmed, start = c(2020, 1), frequency = 12)
-    tsDD <- ts(COVIDCountryMonth$NewDeaths, start = c(2020, 1), frequency = 12)
+    x7 <- COVIDCountry$Date
+    yTC7 <- COVIDCountry$Confirmed7
+    yTD7 <- COVIDCountry$Deaths7
+    yDC7 <- COVIDCountry$NewConfirmed7
+    yDD7 <- COVIDCountry$NewDeaths7
+  
+    # Decompositions
+    
+    decompTC <- decompose(tsTC, type = 'multiplicative')
+    decompTD <- decompose(tsTD, type = 'multiplicative')
+    decompDC <- decompose(tsDC, type = 'multiplicative')
+    decompDD <- decompose(tsDD, type = 'multiplicative')
     
     # Plotting
     #Total Confirmed Cases
@@ -173,12 +189,24 @@ server <- function(input, output, session){
         }
     })
     
+    output$TCTrendDecomp <- renderPlot({
+      autoplot(decompTC$trend)
+    })
+    
+    output$TCSeasonalDecomp <- renderPlot({
+      autoplot(decompTC$seasonal)
+    })
+    
+    output$TCRandomDecomp <- renderPlot({
+      autoplot(decompTC$random)
+    })
+    
     output$TCSeasonal <- renderPlot({
-      ggseasonplot(tsTC, polar = FALSE) + scale_y_continuous(breaks = yRangeMonthTC, labels = yLabelMonthTC) + labs(title = TotalConfirmedSeasonal, x = "Month", col = "Year") + geom_line(size=2)
+      ggseasonplot(tsTCMonth, polar = FALSE) + scale_y_continuous(breaks = yRangeMonthTC, labels = yLabelMonthTC) + labs(title = TotalConfirmedSeasonal, x = "Month", col = "Year") + geom_line(size=2)
     })
     
     output$TCSpider <- renderPlot({
-      ggseasonplot(tsTC, polar = TRUE) + labs(title = TotalConfirmedSeasonal, x = "Month", col = "Year") + geom_line(size=2) + theme(axis.text.y=element_blank(), axis.ticks.y=element_blank())
+      ggseasonplot(tsTCMonth, polar = TRUE) + labs(title = TotalConfirmedSeasonal, x = "Month", col = "Year") + geom_line(size=2) + theme(axis.text.y=element_blank(), axis.ticks.y=element_blank())
     })
     
     # Total Deaths    
@@ -202,13 +230,24 @@ server <- function(input, output, session){
         }
         
     })
+    output$TDTrendDecomp <- renderPlot({
+      autoplot(decompTD$trend)
+    })
+    
+    output$TDSeasonalDecomp <- renderPlot({
+      autoplot(decompTD$seasonal)
+    })
+    
+    output$TDRandomDecomp <- renderPlot({
+      autoplot(decompTD$random)
+    })
     
     output$TDSeasonal <- renderPlot({
-      ggseasonplot(tsTD, polar = FALSE) + labs(title = TotalDeathsSeasonal, x = "Month", col = "Year") + scale_y_continuous(breaks = yRangeMonthTD, labels = yLabelMonthTD) + geom_line(size=2)
+      ggseasonplot(tsTDMonth, polar = FALSE) + labs(title = TotalDeathsSeasonal, x = "Month", col = "Year") + scale_y_continuous(breaks = yRangeMonthTD, labels = yLabelMonthTD) + geom_line(size=2)
     })
     
     output$TDSpider <- renderPlot({
-      ggseasonplot(tsTD, polar = TRUE) + labs(title = TotalDeathsSeasonal, x = "Month", col = "Year") + geom_line(size=2) + theme(axis.text.y=element_blank(), axis.ticks.y=element_blank())
+      ggseasonplot(tsTDMonth, polar = TRUE) + labs(title = TotalDeathsSeasonal, x = "Month", col = "Year") + geom_line(size=2) + theme(axis.text.y=element_blank(), axis.ticks.y=element_blank())
     })
     
     # Daily Confirmed Cases    
@@ -232,13 +271,25 @@ server <- function(input, output, session){
         }
     })
     
+    output$DCTrendDecomp <- renderPlot({
+      autoplot(decompDC$trend)
+    })
+    
+    output$DCSeasonalDecomp <- renderPlot({
+      autoplot(decompDC$seasonal)
+    })
+    
+    output$DCRandomDecomp <- renderPlot({
+      autoplot(decompDC$random)
+    })
+    
     output$DCSeasonal <- renderPlot({
-      ggseasonplot(tsDC, polar = FALSE) + labs(title = DailyConfirmedSeasonal, x = "Month", col = "Year") + scale_y_continuous(breaks = yRangeMonthDC, labels = yLabelMonthDC) + geom_line(size=2)
+      ggseasonplot(tsDCMonth, polar = FALSE) + labs(title = DailyConfirmedSeasonal, x = "Month", col = "Year") + scale_y_continuous(breaks = yRangeMonthDC, labels = yLabelMonthDC) + geom_line(size=2)
       
     })
     
     output$DCSpider <- renderPlot({
-      ggseasonplot(tsDC, polar = TRUE) + labs(title = DailyConfirmedSeasonal, x = "Month", col = "Year") + geom_line(size=2) + theme(axis.text.y=element_blank(), axis.ticks.y=element_blank())
+      ggseasonplot(tsDCMonth, polar = TRUE) + labs(title = DailyConfirmedSeasonal, x = "Month", col = "Year") + geom_line(size=2) + theme(axis.text.y=element_blank(), axis.ticks.y=element_blank())
       
     })
     
@@ -263,13 +314,25 @@ server <- function(input, output, session){
         }
     })
     
+    output$DDTrendDecomp <- renderPlot({
+      autoplot(decompDD$trend)
+    })
+    
+    output$DDSeasonalDecomp <- renderPlot({
+      autoplot(decompDD$seasonal)
+    })
+    
+    output$DDRandomDecomp <- renderPlot({
+      autoplot(decompDD$random)
+    })
+    
     output$DDSeasonal <- renderPlot({
-      ggseasonplot(tsDD, polar = FALSE) + labs(title = DailyDeathsSeasonal, x = "Month", col = "Year") + scale_y_continuous(breaks = yRangeMonthDD, labels = yLabelMonthDD) + geom_line(size=2)
+      ggseasonplot(tsDDMonth, polar = FALSE) + labs(title = DailyDeathsSeasonal, x = "Month", col = "Year") + scale_y_continuous(breaks = yRangeMonthDD, labels = yLabelMonthDD) + geom_line(size=2)
       
     })
     
     output$DDSpider <- renderPlot({
-      ggseasonplot(tsDD, polar = TRUE) + labs(title = DailyDeathsSeasonal, x = "Month", col = "Year") + geom_line(size=2) + theme(axis.text.y=element_blank(), axis.ticks.y=element_blank())
+      ggseasonplot(tsDDMonth, polar = TRUE) + labs(title = DailyDeathsSeasonal, x = "Month", col = "Year") + geom_line(size=2) + theme(axis.text.y=element_blank(), axis.ticks.y=element_blank())
       
     })
   })}  
