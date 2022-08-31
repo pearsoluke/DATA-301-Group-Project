@@ -141,21 +141,33 @@ server <- function(input, output, session){
     TotalConfirmedTitle <- paste("Total confirmed cases in", input$Country)
     TotalConfirmedSeasonal <- paste("Seasonal plot of", TotalConfirmedTitle)
     TotalConfirmedACF <- paste("Autocorrelation of", TotalConfirmedTitle)
+    TotalConfirmedDecompTrend <- paste("Decomposition of", TotalConfirmedTitle, "- Trend")
+    TotalConfirmedDecompSeason <- paste("Decomposition of", TotalConfirmedTitle, "- Season")
+    TotalConfirmedDecompRandom <- paste("Decomposition of", TotalConfirmedTitle, "- Random")
     TotalConfirmedY <- "Total Cases"
     
     TotalDeathsTitle <- paste("Total deaths in", input$Country)
     TotalDeathsSeasonal <- paste("Seasonal plot of", TotalDeathsTitle)
     TotalDeathsACF <- paste("Autocorrelation of", TotalDeathsTitle)
+    TotalDeathsDecompTrend <- paste("Decomposition of", TotalDeathsTitle, "- Trend")
+    TotalDeathsDecompSeason <- paste("Decomposition of", TotalDeathsTitle, "- Season")
+    TotalDeathsDecompRandom <- paste("Decomposition of", TotalDeathsTitle, "- Random")
     TotalDeathsY <- "Total Deaths"
     
     DailyConfirmedTitle <- paste("Daily confirmed cases in", input$Country)
     DailyConfirmedSeasonal <- paste("Seasonal plot of", DailyConfirmedTitle)
     DailyConfirmedACF <- paste("Autocorrelation of", DailyConfirmedTitle)
+    DailyConfirmedDecompTrend <- paste("Decomposition of", DailyConfirmedTitle, "- Trend")
+    DailyConfirmedDecompSeason <- paste("Decomposition of", DailyConfirmedTitle, "- Season")
+    DailyConfirmedDecompRandom <- paste("Decomposition of", DailyConfirmedTitle, "- Random")
     DailyConfirmedY <- "Daily Cases"
     
     DailyDeathsTitle <- paste("Daily deaths in", input$Country)
     DailyDeathsSeasonal <- paste("Seasonal plot of", DailyDeathsTitle)
     DailyDeathsACF <- paste("Autocorrelation of", DailyDeathsTitle)
+    DailyDeathsDecompTrend <- paste("Decomposition of", DailyDeathsTitle, "- Trend")
+    DailyDeathsDecompSeason <- paste("Decomposition of", DailyDeathsTitle, "- Season")
+    DailyDeathsDecompRandom <- paste("Decomposition of", DailyDeathsTitle, "- Random")
     DailyDeathsY <- "Daily Deaths"
     
     xText <- paste("Date by", input$dateInterval)
@@ -198,15 +210,15 @@ server <- function(input, output, session){
     })
     
     output$TCTrendDecomp <- renderPlot({
-      autoplot(decompTC$trend)
+      autoplot(decompTC$trend) + labs(title = TotalConfirmedDecompTrend)
     })
     
     output$TCSeasonalDecomp <- renderPlot({
-      autoplot(decompTC$seasonal)
+      autoplot(decompTC$seasonal) + labs(title = TotalConfirmedDecompSeason)
     })
     
     output$TCRandomDecomp <- renderPlot({
-      autoplot(decompTC$random)
+      autoplot(decompTC$random) + labs(title = TotalConfirmedDecompRandom)
     })
     
     output$TCSeasonal <- renderPlot({
@@ -243,15 +255,16 @@ server <- function(input, output, session){
         
     })
     output$TDTrendDecomp <- renderPlot({
-      autoplot(decompTD$trend)
+      g <- autoplot(decompTD$trend)
+      g <- g  + labs(title = TotalDeathsDecompTrend)
     })
     
     output$TDSeasonalDecomp <- renderPlot({
-      autoplot(decompTD$seasonal)
+      autoplot(decompTD$seasonal) + labs(title = TotalDeathsDecompSeason)
     })
     
     output$TDRandomDecomp <- renderPlot({
-      autoplot(decompTD$random)
+      autoplot(decompTD$random) + labs(title = TotalDeathsDecompRandom)
     })
     
     output$TDSeasonal <- renderPlot({
@@ -288,15 +301,15 @@ server <- function(input, output, session){
     })
     
     output$DCTrendDecomp <- renderPlot({
-      autoplot(decompDC$trend)
+      autoplot(decompDC$trend) + labs(title = DailyConfirmedDecompTrend)
     })
     
     output$DCSeasonalDecomp <- renderPlot({
-      autoplot(decompDC$seasonal)
+      autoplot(decompDC$seasonal) + labs(title = DailyConfirmedDecompSeason)
     })
     
     output$DCRandomDecomp <- renderPlot({
-      autoplot(decompDC$random)
+      autoplot(decompDC$random) + labs(title = DailyConfirmedDecompRandom)
     })
     
     output$DCSeasonal <- renderPlot({
@@ -335,15 +348,15 @@ server <- function(input, output, session){
     })
     
     output$DDTrendDecomp <- renderPlot({
-      autoplot(decompDD$trend)
+      autoplot(decompDD$trend) + labs(title = DailyDeathsDecompTrend)
     })
     
     output$DDSeasonalDecomp <- renderPlot({
-      autoplot(decompDD$seasonal)
+      autoplot(decompDD$seasonal) + labs(title = DailyDeathsDecompSeason)
     })
     
     output$DDRandomDecomp <- renderPlot({
-      autoplot(decompDD$random)
+      autoplot(decompDD$random) + labs(title = DailyDeathsDecompRandom)
     })
     
     output$DDSeasonal <- renderPlot({
